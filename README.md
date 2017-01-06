@@ -1,90 +1,89 @@
 # Authorize.Net In-Person iOS SDK Integration Guide
 
-The Authorize.Net In-Person SDK provides a Semi-Integrated Solution for EMV payment processing. 
+The Authorize.Net In-Person SDK provides a Semi-Integrated Solution for EMV payment processing and traditional credit card processing. 
 
-The merchant's app invokes this SDK to complete an EMV transaction. The SDK handles the complex EMV workflow and securely submits the EMV transaction to Authorize.Net for processing. The merchant's application never touches any EMV data at any point.
+The merchant's Point-of-Sale (PoS) application invokes this SDK to complete an EMV transaction. The SDK handles the complex EMV workflow and securely submits the EMV transaction to Authorize.Net for processing. The merchant's application never touches any EMV data at any point.
   
-# Building an MPoS Application
+# Building a PoS Application
 
-##Overview
+##Including the Framework
 
-The Authorize.Net SDK provides support for five main feature areas of an MPoS solution:
-
-1. Mobile Device Login to Authorize.net gateway
-2. EMV Transaction Processing
-3. Non-EMV Transaction Processing
-4. Customer Email Receipt
-5. Transaction Reporting
-
-##Include the AnetEMVSDK framework into the merchant application
-
-1.	Include the In-Person iOS SDK framework in the merchantís application. 	Use Xcode to include the _AnetEMVSdk.framework_ file under Embedded Binaries. The merchant application must log in and initialize a valid Merchant object with the `password` field.
+1.	Include the In-Person iOS SDK framework in the merchant's application. 	Use Xcode to include the _AnetEMVSdk.framework_ file under Embedded Binaries. The PoS application must log in and initialize a valid Merchant object with the `password` field.
 
 2.	Include additional frameworks and settings.
 
-    a)	Include the _libxml2.2.tbd_ file in the app. 
+    a)	Include the _libxml2.2.tbd_ file in the application. 
 
     b)	Navigate to **Build Settings > Search Paths > Header Search Paths**.
 
-    c)	Enter the following settings: `Iphoneos/usr/include/libxml2`.
+    c)	Enter the following setting: `Iphoneos/usr/include/libxml2`.
 
-    d)  This is required only if you are including SDK as static Library. Please link the following modules in your project
-        AudioToolbox.framework
-        CoreAudio.framework
-        MediaPlayer.framework
-        AVFoundation.framework
-        CoreBluetooth.framework
+    d)  Optional - if you are including SDK as static Library, link the following modules in your project:  
+        AudioToolbox.framework  
+        CoreAudio.framework  
+        MediaPlayer.framework  
+        AVFoundation.framework  
+        CoreBluetooth.framework  
 
 3.	Copy Bundle Resources.
 
     a)	Include the `AnetEMVStoryBoard.storyboard` and `eject.mp3` fields from the _AnetEMVSdk.framework_ file in the application. If you included them correctly, you should be able to see Target > Build Phases > Copy Bundle Resources.
 
-4.	If the application is developed in the Swift language, the application needs to have a bridging header file because the _AnetEMVSdk.framework_ file is based on Objective C.
+4.	If the application is developed in the Swift language, the application must have a bridging header file because the _AnetEMVSdk.framework_ file is based on Objective C.
 
-### Initialize the SDK with required environment, AnetEMVSDK can be used for two different environments: SANBOX and LIVE
+### Initialize the SDK Environment
 
-    1. Initialize the singleton with the AUTHNET_ENVIRONMENT setting (dictating whether to access the
-       Sandbox environment or the Live environment) either at the ApplicationDelegate or in the initial
-       UIViewController.  Make sure to #import "AuthNet.h".
+This SDK can send requests to a live environment for payment processing, or to a test environment for integration testing. Initialize the singleton with the AUTHNET_ENVIRONMENT setting either at the `ApplicationDelegate` or in the initial `UIViewController`, using either `ENV_LIVE` or `ENV_TEST`.  Make sure to #import `AuthNet.h`.
+```
+[AuthNet authNetWithEnvironment:ENV_TEST];
+```   
+# Features
 
-       [AuthNet authNetWithEnvironment:ENV_TEST];
+The Authorize.Net SDK supports five main features of a PoS solution:
 
-## Mobile Device Login to Authorize.net gateway
+1. Device Login to the Authorize.net gateway
+2. EMV Transaction Processing
+3. Non-EMV Transaction Processing
+4. Customer Email Receipt
+5. Transaction Reporting
+
+## Logging the Device In and Out of the Gateway
 
 /**
 * Perform mobileDeviceLoginRequest on the AIM API.
 * @param r The request to send.
 */
-- (void) mobileDeviceLoginRequest:(MobileDeviceLoginRequest *)r;
+- `(void) mobileDeviceLoginRequest:(MobileDeviceLoginRequest *)r;`
 
-Perform an mobileDeviceLoginRequest request.  Application can still receive delegate call back for successful, failed, and canceled transaction flows by setting the UIViewController with the setDelegate call of AuthNet class. Application must populate sessionToken generated from login request in all the subsequent api calls to Authorize.net gateway.
+Perform a **mobileDeviceLoginRequest** request.  Application can still receive delegate callback for successful, failed, and canceled transaction flows by setting the **UIViewController** with the setDelegate call of **AuthNet** class. Application must populate **sessionToken** generated from login request in all the subsequent API calls to the Authorize.net gateway.
 
 *
-To ensure maximum security the user should "logout" from their session and subsequently the application should use this method to terminate the mobile API session.*
+To ensure maximum security the user should "logout" from their session and subsequently the application should use this method to terminate the mobile API session.
+*
 
 /**
 * Perform logoutRequest on the AIM API.
 * @param r The request to send.
 */
-- (void) LogoutRequest:(LogoutRequest *)r;
+- `(void) LogoutRequest:(LogoutRequest *)r;`
 
-Perform an LogoutRequest request.  Application can still receive delegate call back for successful, failed, and canceled transaction flows by setting the UIViewController with the setDelegate call call of AuthNet class.
+Perform an **LogoutRequest** request.  Application can still receive delegate call back for successful, failed, and canceled transaction flows by setting the **UIViewController** with the **setDelegate** call of **AuthNet class**.
 
 ## EMV Transaction Processing
 
 ### EMV Transaction Operational Workflow
 
-1.	From POS application, select Pay By Card.
+1.	From PoS application, select Pay By Card.
 
-2.	Attached the card reader to the device if it is not already attached.
+2.	Attach the card reader to the device (if not already attached).
 
-3.	Insert a card with an EMV chip and do not remove the card until the transaction is complete. Alternatively, swipe a non-EMV card.
+3.	Insert a card with an EMV chip and do not remove the card until the transaction is complete.
 
-4.	If only a single compatible payment app resides on the chip, the payment app is selected automatically. If prompted, select the payment app. For example, Visa credit or MasterCard debit.
+4.	If only a single compatible payment application resides on the chip, it is selected automatically. If prompted, select the payment application. For example, Visa credit or MasterCard debit.
 
 5.	Confirm the amount.
 
-6.	If at any time the user cancels the transaction, the transaction is cancelled. 
+6.	The user may cancel the transaction at any time. 
 
 ### Using the SDK to Create and Submit an EMV Transaction
 
@@ -94,11 +93,11 @@ Perform an LogoutRequest request.  Application can still receive delegate call b
 
     b)	`initWithCurrencyCode: terminalID: skipSignature: showReceipt`
 
-    c)	Instantiate `AnetEMVTransactionRequest` and populate the required values, similar to `AuthNetRequest` for regular transactions If you are using swift to build your application then please don't static method provided by SDK to initialize the objects. Also, `AnetEMVSdk` requires the app to provide `presentingViewController`, a completion block to get the response from the SDK about the submitted transaction and cancelation block to execute the cancel action inside the SDK. 
+    c)	Instantiate `AnetEMVTransactionRequest` and populate the required values, similar to `AuthNetRequest` for regular transactions If you are using Swift to build your application then please don't use static method provided by SDK to initialize the objects.  `AnetEMVSdk` requires the app to provide `presentingViewController`, a completion block to get the response from the SDK about the submitted transaction and cancelation block to execute the cancel action inside the SDK. 
 
     d)	The `EMVTransactionType` should be mentioned in the `AnetEMVTransactionRequest`. Refer to the _AnetEMVTransactionRequest.h_ file for all the available enums to populate.
 
-    e)	After creating all the required objects, call the following method AnetEMVManager and submit the transaction. 
+    e)	After creating all the required objects, call the following method **AnetEMVManager** and submit the transaction. 
 
 `[startEMVWithTransactionRequest:presentingViewController:completionBlock:andCancelActionBlock]`
 
@@ -106,7 +105,7 @@ Perform an LogoutRequest request.  Application can still receive delegate call b
 
 ### Success
 
-On success, the completion block should provide the `AnetEMVTransactionResponse` object with required information about the transaction response and isTransactionSuccessful will be true. Refer to _AnetEMVTransactionResponse.h_ for more details. `emvResponse` has `tlvdata` and all the tags as part of the response. 
+On success, the completion block should provide the `AnetEMVTransactionResponse` object with required information about the transaction response and **isTransactionSuccessful** will be true. Refer to _AnetEMVTransactionResponse.h_ for more details. `emvResponse` has `tlvdata` and all the tags as part of the response. 
 
 ### Errors
 
@@ -163,7 +162,7 @@ The `AnetEMVUISettings` field exposes the properties to set:
 
 ## Non-EMV Transaction Processing
 
-The SDK includes APIs for each of the supported API methods in AuthNet class: 
+The SDK includes APIs for each of the supported API methods in **AuthNet** class: 
 
 1. AUTH
 2. PRIOR_AUTH_CAPTURE
@@ -177,74 +176,74 @@ The SDK includes APIs for each of the supported API methods in AuthNet class:
 * Perform AUTH transaction with request.
 * @param r The request to send.
 */
-- (void) authorizeWithRequest:(CreateTransactionRequest *)r;
+- `(void) authorizeWithRequest:(CreateTransactionRequest *)r;`
 
-Perform a AUTH request. Application will receive delegate call back 
+Perform an AUTH request. Application will receive delegate callback 
 for successful, failed, and canceled transaction flows by setting 
-the UIViewController with the setDelegate call of AuthNet class.
+the **UIViewController** with the **setDelegate** call of **AuthNet** class.
 
 /**
 * Perform AUTH_CAPTURE transaction with request.
 * @param r The request to send.
 */
-- (void) purchaseWithRequest:(CreateTransactionRequest *)r;
+- `(void) purchaseWithRequest:(CreateTransactionRequest *)r;`
 
-Perform a AUTH_CAPTURE request.  Application will receive delegate call 
+Perform an AUTH_CAPTURE request.  Application will receive delegate call
 back for successful, failed, and canceled transaction flows by setting 
-the UIViewController with the setDelegate call of AuthNet class.
+the **UIViewController** with the **setDelegate** call of **AuthNet* class.
 
 /**
 * Perform PRIOR_AUTH_CAPTURE transaction with request.
 * @param r The request to send.
 */
-- (void) captureWithRequest:(CreateTransactionRequest *)r;
+- `(void) captureWithRequest:(CreateTransactionRequest *)r;`
 
-Perform a PRIOR_AUTH_CAPTURE request.  Application can still receive delegate call 
+Perform a PRIOR_AUTH_CAPTURE request.  Application can still receive delegate call
 back for successful, failed, and canceled transaction flows by setting 
-the UIViewController with the setDelegate call of AuthNet class.
+the **UIViewController** with the **setDelegate** call of **AuthNet** class.
 
 /**
 * Perform CAPTURE_ONLY transaction with request.
 * NOTE: Request must include in the request the authCode (x_auth_code).
 * @param r The request to send.
 */
-- (void) captureWithRequest:(CreateTransactionRequest *)r;
+- `(void) captureWithRequest:(CreateTransactionRequest *)r;`
 
-Perform a PRIOR_AUTH_CAPTURE request.  Application can still receive delegate 
-call back for successful, failed, and canceled transaction flows by setting the 
-UIViewController with the setDelegate call of AuthNet class.
+Perform a PRIOR_AUTH_CAPTURE request.  Application can still receive delegate call
+back for successful, failed, and canceled transaction flows by setting 
+the **UIViewController** with the **setDelegate** call of **AuthNet** class.
 
 /**
 * Perform VOID transaction with request.
 * @param r The request to send.
 */
-- (void) voidWithRequest:(CreateTransactionRequest *)r;
+- `(void) voidWithRequest:(CreateTransactionRequest *)r;`
 
-Perform a VOID request.  Application can still receive delegate call 
-back for successful, failed, and canceled transaction flows by 
-setting the UIViewController with the setDelegate call of AuthNet class.
+Perform a VOID request.  Application can still receive delegate call
+back for successful, failed, and canceled transaction flows by setting 
+the **UIViewController** with the **setDelegate** call of **AuthNet** class.
 
 /**
 * Perform CREDIT transaction with request.
 * @param r The request to send.
 */
-- (void) creditWithRequest:(CreateTransactionRequest *)r;
+- `(void) creditWithRequest:(CreateTransactionRequest *)r;`
 
-Perform a CREDIT request.  Application can still receive delegate call back for successful, 
-failed, and canceled transaction flows by setting the UIViewController with 
-the setDelegate call of AuthNet class.
+Perform a CREDIT request.  Application can still receive delegate call
+back for successful, failed, and canceled transaction flows by setting 
+the **UIViewController** with the **setDelegate** call of **AuthNet** class.
 
 /**
 * Perform unlinked CREDIT transaction with request.
 * NOTE: Unlinked Credit request must not have an transaction id (x_trans_id) value.
 * @param r The request to send.
 */
-- (void) unlinkedCreditWithRequest:(CreateTransactionRequest *)r;
+- `(void) unlinkedCreditWithRequest:(CreateTransactionRequest *)r;`
 
 Perform an unlinked CREDIT request without using the UIButton call 
-back mechanism.  Application can still receive delegate call back for 
-successful, failed, and canceled transaction flows by setting the UIViewController 
-with the setDelegate call of AuthNet class.
+back mechanism.  Application can still receive delegate call
+back for successful, failed, and canceled transaction flows by setting 
+the **UIViewController** with the **setDelegate** call of **AuthNet** class.
 
 
 ## Customer Email Receipt
@@ -253,9 +252,11 @@ with the setDelegate call of AuthNet class.
 * Perform sendCustomerTransactionReceiptRequest on the AIM API.
 * @param r The request to send.
 */
-- (void) sendCustomerTransactionReceiptRequest:(SendCustomerTransactionReceiptRequest *) r;
+- `(void) sendCustomerTransactionReceiptRequest:(SendCustomerTransactionReceiptRequest *) r;`
 
-Perform an sendCustomerTransactionReceiptRequest request. Application can still receive delegate call back for successful, failed, and canceled transaction flows by setting the UIViewController with the setDelegate call of AuthNet class.
+Perform a **sendCustomerTransactionReceiptRequest** request. Application can still receive delegate call
+back for successful, failed, and canceled transaction flows by setting 
+the **UIViewController** with the **setDelegate** call of **AuthNet** class.
 
 
 ## Reporting
@@ -264,41 +265,51 @@ Perform an sendCustomerTransactionReceiptRequest request. Application can still 
 * Perform getSettledBatchListRequest on the Reporting API.
 * @param r The reporting request to send.
 */
-- (void) getBatchStatisticsRequest:(GetBatchStatisticsRequest *) r;
+- `(void) getBatchStatisticsRequest:(GetBatchStatisticsRequest *) r;`
 
-Perform an getBatchStatisticsRequest request. Application can still receive delegate call back for successful, failed, and canceled transaction flows by setting the UIViewController with the setDelegate call of AuthNet class.
+Perform an **getBatchStatisticsRequest** request. Application can still receive delegate call
+back for successful, failed, and canceled transaction flows by setting 
+the **UIViewController** with the **setDelegate** call of **AuthNet** class.
 
 /**
 * Perform getSettledBatchListRequest on the Reporting API.
 * @param r The reporting request to send.
 */
-- (void) getSettledBatchListRequest:(GetSettledBatchListRequest *) r;
+- `(void) getSettledBatchListRequest:(GetSettledBatchListRequest *) r;`
 
-Perform an getSettledBatchListRequest request. Application can still receive delegate call back for successful, failed, and canceled transaction flows by setting the UIViewController with the setDelegate call of AuthNet class.
-
-/**
-* Perform getTransactionDetailsRequest on the Reporting API.
-* @param r The reporting request to send.
-*/
-- (void) getTransactionDetailsRequest:(GetTransactionDetailsRequest *) r;
-
-Perform an getTransactionDetailsRequest request. Application can still receive delegate call back for successful, failed, and canceled transaction flows by setting the UIViewController with the setDelegate call of AuthNet class.
+Perform a **getSettledBatchListRequest** request. Application can still receive delegate call
+back for successful, failed, and canceled transaction flows by setting 
+the **UIViewController** with the **setDelegate** call of **AuthNet** class.
 
 /**
 * Perform getTransactionDetailsRequest on the Reporting API.
 * @param r The reporting request to send.
 */
-- (void) getTransactionListRequest:(GetTransactionListRequest *) r;
+- `(void) getTransactionDetailsRequest:(GetTransactionDetailsRequest *) r;`
 
-Perform an getTransactionListRequest request. Application can still receive delegate call back for successful, failed, and canceled transaction flows by setting the UIViewController with the setDelegate call of AuthNet class.
+Perform a **getTransactionDetailsRequest** request. Application can still receive delegate call
+back for successful, failed, and canceled transaction flows by setting 
+the **UIViewController** with the **setDelegate** call of **AuthNet** class.
+
+/**
+* Perform getTransactionDetailsRequest on the Reporting API.
+* @param r The reporting request to send.
+*/
+- `(void) getTransactionListRequest:(GetTransactionListRequest *) r;`
+
+Perform an **getTransactionListRequest** request. Application can still receive delegate call
+back for successful, failed, and canceled transaction flows by setting 
+the **UIViewController** with the **setDelegate** call of **AuthNet** class.
 
 /**
 * Perform getUnsettledTransactionListRequest on the Reporting API.
 * @param r The reporting request to send.
 */
-- (void) getUnsettledTransactionListRequest:(GetUnsettledTransactionListRequest *) r;
+- `(void) getUnsettledTransactionListRequest:(GetUnsettledTransactionListRequest *) r;`
 
-Perform an getUnsettledTransactionListRequest request. Application can still receive delegate call back for successful, failed, and canceled transaction flows by setting the UIViewController with the setDelegate call of AuthNet class.
+Perform a **getUnsettledTransactionListRequest** request. Application can still receive delegate call
+back for successful, failed, and canceled transaction flows by setting 
+the **UIViewController** with the **setDelegate** call of **AuthNet** class.
 
 #Code Snippets
 
@@ -306,10 +317,11 @@ Perform an getUnsettledTransactionListRequest request. Application can still rec
     Test environment or the Live environment) either at the ApplicationDelegate or in the initial
     UIViewController.  Make sure to #import "AuthNet.h".
 
-    [AuthNet authNetWithEnvironment:ENV_TEST];
+`    [AuthNet authNetWithEnvironment:ENV_TEST];`
 
 2) Login to the gateway
 
+```java
     MobileDeviceLoginRequest *mobileDeviceLoginRequest = [MobileDeviceLoginRequest mobileDeviceLoginRequest];
     mobileDeviceLoginRequest.anetApiRequest.merchantAuthentication.name = <USERNAME>;
     mobileDeviceLoginRequest.anetApiRequest.merchantAuthentication.password = <PASSWORD>;
@@ -324,8 +336,11 @@ Perform an getUnsettledTransactionListRequest request. Application can still rec
         sessionToken = [response.sessionToken retain];
     };
 
+```
 
 3) Create Non-EMV purchase transaction 
+
+```java
     
     CreditCardType *creditCardType = [CreditCardType creditCardType];
     creditCardType.cardNumber = @"4111111111111111";
@@ -373,7 +388,11 @@ Perform an getUnsettledTransactionListRequest request. Application can still rec
     // Handle payment success
     }
 
+```
+
 4) Void the transaction
+
+```java
 
     CreateTransactionRequest *request = [CreateTransactionRequest createTransactionRequest];
 
@@ -395,8 +414,12 @@ Perform an getUnsettledTransactionListRequest request. Application can still rec
         // Handle payment success
     }
 
+```
+
 5) Refund the transaction
-    
+
+```java
+
     CreateTransactionRequest *request = [CreateTransactionRequest createTransactionRequest];
     AuthNet *an = [AuthNet getInstance];
     [an setDelegate:self];
@@ -416,7 +439,11 @@ Perform an getUnsettledTransactionListRequest request. Application can still rec
         // Handle payment success
     }
 
+```
+
 6) GetSettledBatchListRequest     
+
+```java
 
     GetSettledBatchListRequest *r = [GetSettledBatchListRequest getSettlementBatchListRequest];
     r.anetApiRequest.merchantAuthentication.sessionToken = sessionToken;
@@ -429,7 +456,11 @@ Perform an getUnsettledTransactionListRequest request. Application can still rec
     - (void) getSettledBatchListSucceeded:(GetSettledBatchListResponse *)response {
     }
 
+```
+
 7) GetTransactionDetailsRequest     
+
+```java
 
     GetTransactionDetailsRequest *r = [GetTransactionDetailsRequest getTransactionDetailsRequest];
     r.anetApiRequest.merchantAuthentication.sessionToken = sessionToken;
@@ -442,8 +473,12 @@ Perform an getUnsettledTransactionListRequest request. Application can still rec
     - (void) getTransactionDetailsSucceeded:(GetTransactionDetailsResponse *)response {
     }
 
+```
+
 8) GetTransactionListRequest
-    
+   
+```java
+   
     GetTransactionListRequest *r = [GetTransactionListRequest getTransactionListRequest];
     r.anetApiRequest.merchantAuthentication.sessionToken = sessionToken;
     r.anetApiRequest.merchantAuthentication.mobileDeviceId = <PROVIDE A UNIQUE DEVICE IDENTIFIER>;
@@ -459,8 +494,12 @@ Perform an getUnsettledTransactionListRequest request. Application can still rec
     - (void) getTransactionListSucceeded:(GetTransactionListResponse *)response {
     }
 
+```
+
 9) GetUnsettledTransactionListRequest     
-    
+
+```java
+
     GetUnsettledTransactionListRequest *r = [GetUnsettledTransactionListRequest getUnsettledTransactionListRequest];
     r.anetApiRequest.merchantAuthentication.sessionToken = sessionToken;
     r.anetApiRequest.merchantAuthentication.mobileDeviceId = <PROVIDE A UNIQUE DEVICE IDENTIFIER>;
@@ -470,8 +509,12 @@ Perform an getUnsettledTransactionListRequest request. Application can still rec
     // Callback
     - (void) getUnsettledTransactionListSucceeded:(GetUnsettledTransactionListResponse *)response {
     }
+    
+ ```   
 
-10) SendCustomerTransactionReceiptRequest     
+10) SendCustomerTransactionReceiptRequest    
+
+```java
 
     SendCustomerTransactionReceiptRequest *r = [SendCustomerTransactionReceiptRequest sendCustomerTransactionReceiptRequest];
     r.anetApiRequest.merchantAuthentication.sessionToken = sessionToken;
@@ -513,8 +556,12 @@ Perform an getUnsettledTransactionListRequest request. Application can still rec
     // Callback
     - (void) sendCustomerTransactionReceiptSucceeded:(SendCustomerTransactionReceiptResponse *)response {
     }
+    
+ ```
 
 11) Logout request 
+
+```java
     
     LogoutRequest *r = [LogoutRequest logoutRequest];
     r.anetApiRequest.merchantAuthentication.sessionToken = sessionToken;
@@ -525,6 +572,8 @@ Perform an getUnsettledTransactionListRequest request. Application can still rec
     // Callback
     - (void) logoutSucceeded:(LogoutResponse *)response {
     }
+    
+ ```
 
 ## Error  Codes
 You can view these error messages at our [Reason Response Code](http://developer.authorize.net/api/reference/responseCodes.html) by entering the Response Reason Code into the tool. There will be additional information and suggestions there.
